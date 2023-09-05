@@ -1,9 +1,6 @@
 aiodns
 aiofiles
-aiohttp
-async-timeout
-attrs
-cchardet
+aiohttp[speed]
 jinja2
 pyee2
 stringcase
