@@ -2,6 +2,7 @@ import logging
 from asyncio import AbstractEventLoop, Event, Task, get_event_loop, sleep
 from inspect import isawaitable
 from typing import Any, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, Type, Union
+import sys
 
 from async_timeout import timeout
 from pyee2 import EventEmitterS
@@ -160,7 +161,11 @@ class Connection(EventEmitterS):
         )
         self._closed = False
         # ensure that _recv_loop gets going
-        ready_event = Event(loop=self._loop)
+        if sys.version_info[1] > 9:
+            ready_event = Event()
+        else:
+            ready_event = Event(loop = self._loop)
+
         self._recv_task = self._loop.create_task(self._recv_loop())
         self.once(ConnectionEvents.Ready, lambda: ready_event.set())
         await ready_event.wait()
