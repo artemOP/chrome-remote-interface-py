@@ -8,16 +8,6 @@ basedir = Path(path.dirname(path.abspath(__file__)))
 with basedir.joinpath("README.md").open("r", encoding="utf-8") as f:
     README = f.read()
 
-
-def get_requirements():
-    reqs = []
-    reqp = basedir.joinpath("requirements.txt")
-    with reqp.open("r") as rin:
-        for line in rin:
-            reqs.append(line.rstrip())
-    return reqs
-
-
 setup(
     name="cripy",
     version="1.5.0",
@@ -28,9 +18,16 @@ setup(
     author_email="john.berlin@rhizome.com",
     url="https://github.com/webrecorder/chrome-remote-interface-py",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    install_requires=get_requirements(),
+    install_requires=[
+        "aiofiles",
+        "aiohttp[speed]",
+        "jinja2",
+        "pyee2",
+        "stringcase",
+        "websockets"
+    ],
     package_data={"": ["templates/simple/*.j2", "templates/full/*.j2"]},
-    extras_require={"speed": ["uvloop", "ujson"], "win-speed": ["ujson"]},
+    extras_require={"speed": ["uvloop", "ujson", "aiodns"], "win-speed": ["ujson", "aiodns"]},
     include_package_data=True,
     zip_safe=False,
     license="Apache",
