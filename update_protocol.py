@@ -3,10 +3,15 @@ from aiohttp import ClientSession
 from typing import List, Tuple
 import pathlib
 from cripy import CDP
-from ujson import dumps
+
+try:
+    from ujson import dumps
+except ImportError:
+    from json import dumps
 
 try:
     import uvloop
+
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 except ImportError:
     pass
@@ -36,9 +41,10 @@ async def fetch_all(urls: List[str]) -> None:
 
 async def get_proto_from_browser() -> None:
     proto = await CDP.Protocol(loop=asyncio.get_event_loop())
-    with open('./data/protocol.json', 'w') as out:
+    with open("./data/protocol.json", "w") as out:
         out.write(dumps(proto))
     print(proto)
+
 
 if __name__ == "__main__":
     # urls = [

@@ -1,7 +1,10 @@
 from asyncio import AbstractEventLoop, get_event_loop
 from typing import ClassVar, Dict, Optional, TYPE_CHECKING, Type, Union
 
-from ujson import dumps, loads
+try:
+    from ujson import dumps, loads
+except ImportError:
+    from json import dumps, loads
 from pyee2 import EventEmitterS
 
 from .cdp_result_future import CDPResultFuture
@@ -87,9 +90,7 @@ class CDPSession(EventEmitterS):
         if params is None:
             params = {}
         if self._flat_session:
-            _id = self._connection._raw_send(
-                {"method": method, "params": params, "sessionId": self.session_id}
-            )
+            _id = self._connection._raw_send({"method": method, "params": params, "sessionId": self.session_id})
             callback = CDPResultFuture(method, self._loop)
             self._callbacks[_id] = callback
             return callback
@@ -110,9 +111,7 @@ class CDPSession(EventEmitterS):
         """
         if not self._connection:
             raise NetworkError(f"CDPSession for {self._target_type} already closed.")
-        await self._connection.send(
-            "Target.detachFromTarget", {"sessionId": self._session_id}
-        )
+        await self._connection.send("Target.detachFromTarget", {"sessionId": self._session_id})
 
     def create_session(self, target_type: str, session_id: str) -> "CDPSession":
         """Creates a new session for the target being connected to specified
@@ -123,9 +122,7 @@ class CDPSession(EventEmitterS):
         :return: A new session connected to the target
         """
         connection = self._connection if self._flat_session else self
-        session = CDPSession(
-            connection, target_type, session_id, flat_session=self._flat_session
-        )
+        session = CDPSession(connection, target_type, session_id, flat_session=self._flat_session)
         if self._flat_session:
             self._connection.add_session(session)
         else:
@@ -177,11 +174,7 @@ class CDPSession(EventEmitterS):
         """Close this session"""
         for cb in self._callbacks.values():
             if not cb.done():
-                cb.set_exception(
-                    NetworkError(
-                        f"Network error {cb.method}: {self._target_type} closed."
-                    )
-                )
+                cb.set_exception(NetworkError(f"Network error {cb.method}: {self._target_type} closed."))
         self._callbacks.clear()
         for session in self._sessions.values():
             session.on_closed()

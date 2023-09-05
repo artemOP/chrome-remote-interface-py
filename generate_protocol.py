@@ -2,7 +2,10 @@ import subprocess
 import traceback
 from pathlib import Path
 
-import ujson
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from cripy.protogen import generate_protocol_clazzs
 
@@ -10,7 +13,7 @@ from cripy.protogen import generate_protocol_clazzs
 def gen() -> None:
     cwd = Path.cwd()
     with (cwd / "data" / "protocol.json").open("r") as pin:
-        proto_data = ujson.load(pin)
+        proto_data = json.load(pin)
     generate_protocol_clazzs(proto_data["domains"], cwd / "cripy" / "protocol")
     try:
         from cripy.client import Client

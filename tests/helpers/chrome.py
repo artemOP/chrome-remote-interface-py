@@ -7,7 +7,10 @@ from itertools import chain
 from tempfile import TemporaryDirectory
 from typing import Dict, Tuple, Optional
 
-import uvloop
+try:
+    import uvloop
+except ImportError:
+    pass
 
 from cripy.cdp import CDP
 
@@ -92,9 +95,7 @@ async def which_chrome(loop: AbstractEventLoop, env: Dict) -> Optional[str]:
 async def check_chrome_desktops(loop: AbstractEventLoop, env: Dict) -> Optional[str]:
     results = await asyncio.gather(
         run_command(dt_command.format("/usr/share/applications/*.desktop"), loop, env),
-        run_command(
-            dt_command.format("~/.local/share/applications/*.desktop"), loop, env
-        ),
+        run_command(dt_command.format("~/.local/share/applications/*.desktop"), loop, env),
         loop=loop,
     )
 
@@ -122,9 +123,7 @@ async def find_chrome(loop: AbstractEventLoop, env: Dict) -> Optional[str]:
         return chrome_exe
 
 
-async def launch_chrome(
-    headless: bool = True
-) -> Tuple[Process, TemporaryDirectory, str]:
+async def launch_chrome(headless: bool = True) -> Tuple[Process, TemporaryDirectory, str]:
     loop = asyncio.get_event_loop()
     env = os.environ.copy()
     chrome_exe = await find_chrome(loop, env)
@@ -158,7 +157,10 @@ async def launch_chrome(
 
 
 if __name__ == "__main__":
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    try:
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except NameError:
+        pass
     asyncio.get_event_loop().run_until_complete(launch_chrome())
     # cp, tmpdir, wsurl = ChromeLauncher.launch(headless=False)
     # tmpdir.cleanup()

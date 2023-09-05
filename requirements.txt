@@ -7,6 +7,4 @@ cchardet
 jinja2
 pyee2
 stringcase
-ujson
 websockets
-uvloop

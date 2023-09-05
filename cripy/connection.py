@@ -5,7 +5,11 @@ from typing import Any, Callable, ClassVar, Dict, Optional, TYPE_CHECKING, Type,
 
 from async_timeout import timeout
 from pyee2 import EventEmitterS
-from ujson import dumps, loads
+
+try:
+    from ujson import dumps, loads
+except:
+    from json import dumps, loads
 from websockets import ConnectionClosed, WebSocketClientProtocol, connect
 
 from .cdp_result_future import CDPResultFuture
@@ -135,9 +139,7 @@ class Connection(EventEmitterS):
         self._callbacks[_id] = callback
         return callback
 
-    async def connect(
-        self, ws_url: Optional[str] = None, flatten_sessions: Optional[bool] = None
-    ) -> None:
+    async def connect(self, ws_url: Optional[str] = None, flatten_sessions: Optional[bool] = None) -> None:
         """Connect to the remote websocket endpoint
 
         :param ws_url: The websocket URL to connect to
@@ -153,7 +155,7 @@ class Connection(EventEmitterS):
             ping_timeout=None,
             max_size=None,
             compression=None,
-            max_queue=2 ** 7,
+            max_queue=2**7,
             loop=self._loop,
         )
         self._closed = False
@@ -386,9 +388,7 @@ class Connection(EventEmitterS):
         :param session_id: The id of the session
         :return: A CDPSession connected to the target
         """
-        return CDPSession(
-            self, target_type, session_id, flat_session=self._flatten_sessions
-        )
+        return CDPSession(self, target_type, session_id, flat_session=self._flatten_sessions)
 
     def _log_msg(self, msg: Dict) -> None:
         """Utility function to log all received messages IFF someone is listening

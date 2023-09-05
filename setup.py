@@ -30,6 +30,7 @@ setup(
     packages=find_packages(exclude=["tests", "tests.*"]),
     install_requires=get_requirements(),
     package_data={"": ["templates/simple/*.j2", "templates/full/*.j2"]},
+    extras_require={"speed": ["uvloop", "ujson"], "win-speed": ["ujson"]},
     include_package_data=True,
     zip_safe=False,
     license="Apache",

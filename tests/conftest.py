@@ -1,18 +1,30 @@
 from typing import Dict, List, Union
 
 import pytest
-import uvloop
+
 from _pytest.fixtures import SubRequest
 
 from cripy import CDP, Client, connect
 from .helpers import Cleaner, launch_chrome
 
-uvloop.install()
+try:
+    import uvloop
+    from uvloop import Loop
+
+    uvloop.install()
+except ImportError:
+    import asyncio
+    from asyncio import AbstractEventLoop as Loop
+
+    pass
 
 
 @pytest.fixture(scope="class")
-def event_loop() -> uvloop.Loop:
-    loop = uvloop.new_event_loop()
+def event_loop() -> Loop:
+    try:
+        loop = uvloop.new_event_loop()
+    except:
+        loop = asyncio.get_event_loop()
     yield loop
     loop.close()
 

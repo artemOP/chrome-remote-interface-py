@@ -4,7 +4,10 @@ from asyncio import AbstractEventLoop
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import urljoin, urlparse
 
-import ujson
+try:
+    import ujson as json
+except ImportError:
+    import json
 from aiohttp import AsyncResolver, ClientSession, TCPConnector
 
 from .client import Client, ClientDynamic
@@ -47,14 +50,12 @@ def make_http_session(loop: Optional[AbstractEventLoop] = None) -> ClientSession
         loop = asyncio.get_event_loop()
     return ClientSession(
         connector=TCPConnector(resolver=AsyncResolver(loop=loop), loop=loop),
-        json_serialize=ujson.dumps,
+        json_serialize=json.dumps,
         loop=loop,
     )
 
 
-async def fetch_and_gen_proto_classes(
-    url: str, loop: Optional[AbstractEventLoop] = None
-) -> Dict[str, Any]:
+async def fetch_and_gen_proto_classes(url: str, loop: Optional[AbstractEventLoop] = None) -> Dict[str, Any]:
     purl = urlparse(url)
     host, port = purl.netloc.split(":")
     is_https = purl.scheme.startswith("wss") or purl.scheme.startswith("https")
@@ -105,9 +106,7 @@ async def connect(
     else:
         proto_def = None
     if proto_def is not None:
-        client = ClientDynamic(
-            ws_url, flatten_sessions=flatten_sessions, proto_def=proto_def, loop=loop
-        )
+        client = ClientDynamic(ws_url, flatten_sessions=flatten_sessions, proto_def=proto_def, loop=loop)
     else:
         client = Client(ws_url, flatten_sessions=flatten_sessions, loop=loop)
     await client.connect()
@@ -159,9 +158,7 @@ async def get_wsurl_callable_target(
     targets: List[Dict] = await CDP.List(host=host, port=port, secure=secure, loop=loop)
     result: Union[Dict, str, int] = fn(targets)
     if result is None:
-        raise ClientError(
-            "The target selection function did not return a target for us to connect to"
-        )
+        raise ClientError("The target selection function did not return a target for us to connect to")
     if isinstance(result, dict):
         return result["webSocketDebuggerUrl"]
     elif isinstance(result, str):
@@ -197,11 +194,7 @@ async def fetch_ws_url(
     """
     if loop is None:
         loop = asyncio.get_event_loop()
-    furl = (
-        frontend_url
-        if frontend_url is not None
-        else front_end_url(host=host, port=port, secure=secure)
-    )
+    furl = frontend_url if frontend_url is not None else front_end_url(host=host, port=port, secure=secure)
     targets: List[Dict] = await CDP.List(frontend_url=furl, loop=loop)
     backup = None
     for target in targets:
@@ -209,13 +202,9 @@ async def fetch_ws_url(
             backup = backup or target
             if target["type"] == "page":
                 return target.get("webSocketDebuggerUrl")
-    if (
-        backup is not None and backup.get("webSocketDebuggerUrl") is not None
-    ):  # pragma: no cover
+    if backup is not None and backup.get("webSocketDebuggerUrl") is not None:  # pragma: no cover
         return backup.get("webSocketDebuggerUrl")  # pragma: no cover
-    raise ClientError(
-        f"Could not find a inspectable target to connect to: frontend url = {furl}, targets = {targets}"
-    )
+    raise ClientError(f"Could not find a inspectable target to connect to: frontend url = {furl}, targets = {targets}")
 
 
 async def get_connectable_target_wsurl(
@@ -253,9 +242,7 @@ async def get_connectable_target_wsurl(
         loop = asyncio.get_event_loop()  # pragma: no cover
     if target is not None:
         if callable(target):
-            return await get_wsurl_callable_target(
-                fn=target, host=host, port=port, secure=secure, loop=loop
-            )
+            return await get_wsurl_callable_target(fn=target, host=host, port=port, secure=secure, loop=loop)
         elif isinstance(target, dict):
             return target["webSocketDebuggerUrl"]
         elif isinstance(target, str):
@@ -276,9 +263,7 @@ async def get_connectable_target_wsurl(
                 return await get_wsurl_callable_target(
                     fn=find_target_by_id, host=host, port=port, secure=secure, loop=loop
                 )
-        raise ClientError(
-            f"The supplied target ({target}) is not a type ({type(target)}) we know how to handle"
-        )
+        raise ClientError(f"The supplied target ({target}) is not a type ({type(target)}) we know how to handle")
 
     return await fetch_ws_url(host=host, port=port, secure=secure, loop=loop)
 
@@ -328,9 +313,7 @@ class CDP:
         """
         if loop is None:
             loop = asyncio.get_event_loop()  # pragma: no cover
-        ws_url = await get_connectable_target_wsurl(
-            host=host, port=port, secure=secure, target=target, loop=loop
-        )
+        ws_url = await get_connectable_target_wsurl(host=host, port=port, secure=secure, target=target, loop=loop)
         if protocol is not None:
             proto_def = await dynamically_generate_domains(protocol, loop=loop)
         elif remote:
@@ -387,12 +370,8 @@ class CDP:
         """
         if loop is None:
             loop = asyncio.get_event_loop()
-        ws_url = await get_connectable_target_wsurl(
-            host=host, port=port, secure=secure, target=target, loop=loop
-        )
-        conn: Connection = Connection(
-            ws_url, flatten_sessions=flatten_sessions, loop=loop
-        )
+        ws_url = await get_connectable_target_wsurl(host=host, port=port, secure=secure, target=target, loop=loop)
+        conn: Connection = Connection(ws_url, flatten_sessions=flatten_sessions, loop=loop)
         await conn.connect()
         return conn
 
@@ -417,15 +396,11 @@ class CDP:
         if loop is None:
             loop = asyncio.get_event_loop()
         if frontend_url is None:
-            frontend_url = (
-                f"{front_end_url(host=host, port=port, secure=secure)}/json/close/"
-            )
+            frontend_url = f"{front_end_url(host=host, port=port, secure=secure)}/json/close/"
         else:
             frontend_url = frontend_url.lower()
         async with make_http_session(loop=loop) as session:
-            async with session.get(
-                urljoin(ensure_cdp_url_endswith(frontend_url, "json/close/"), target_id)
-            ) as res:
+            async with session.get(urljoin(ensure_cdp_url_endswith(frontend_url, "json/close/"), target_id)) as res:
                 return res.status, await res.text()
 
     @staticmethod
@@ -449,17 +424,11 @@ class CDP:
         if loop is None:
             loop = asyncio.get_event_loop()
         if frontend_url is None:
-            frontend_url = (
-                f"{front_end_url(host=host, port=port, secure=secure)}/json/activate/"
-            )
+            frontend_url = f"{front_end_url(host=host, port=port, secure=secure)}/json/activate/"
         else:
             frontend_url = frontend_url.lower()
         async with make_http_session(loop=loop) as session:
-            async with session.get(
-                urljoin(
-                    ensure_cdp_url_endswith(frontend_url, "json/activate/"), target_id
-                )
-            ) as res:
+            async with session.get(urljoin(ensure_cdp_url_endswith(frontend_url, "json/activate/"), target_id)) as res:
                 return res.status, await res.text()
 
     @staticmethod
@@ -481,15 +450,11 @@ class CDP:
         if loop is None:
             loop = asyncio.get_event_loop()
         if frontend_url is None:
-            frontend_url = (
-                f"{front_end_url(host=host, port=port, secure=secure)}/json/protocol"
-            )
+            frontend_url = f"{front_end_url(host=host, port=port, secure=secure)}/json/protocol"
         else:
             frontend_url = frontend_url.lower()
         async with make_http_session(loop=loop) as session:
-            async with session.get(
-                ensure_cdp_url_endswith(frontend_url, "json/protocol")
-            ) as res:
+            async with session.get(ensure_cdp_url_endswith(frontend_url, "json/protocol")) as res:
                 return await res.json()
 
     @staticmethod
@@ -511,15 +476,11 @@ class CDP:
         if loop is None:
             loop = asyncio.get_event_loop()
         if frontend_url is None:
-            frontend_url = (
-                f"{front_end_url(host=host, port=port, secure=secure)}/json/list"
-            )
+            frontend_url = f"{front_end_url(host=host, port=port, secure=secure)}/json/list"
         else:
             frontend_url = frontend_url.lower()
         async with make_http_session(loop=loop) as session:
-            async with session.get(
-                ensure_cdp_url_endswith(frontend_url, "json/list")
-            ) as res:
+            async with session.get(ensure_cdp_url_endswith(frontend_url, "json/list")) as res:
                 return await res.json()
 
     @staticmethod
@@ -543,9 +504,7 @@ class CDP:
         if loop is None:
             loop = asyncio.get_event_loop()
         if frontend_url is None:
-            frontend_url = (
-                f"{front_end_url(host=host, port=port, secure=secure)}/json/new"
-            )
+            frontend_url = f"{front_end_url(host=host, port=port, secure=secure)}/json/new"
         else:
             frontend_url = frontend_url.lower()
         frontend_url = ensure_cdp_url_endswith(frontend_url, "json/new")
@@ -574,15 +533,11 @@ class CDP:
         if loop is None:
             loop = asyncio.get_event_loop()
         if frontend_url is None:
-            frontend_url = (
-                f"{front_end_url(host=host, port=port, secure=secure)}/json/version"
-            )
+            frontend_url = f"{front_end_url(host=host, port=port, secure=secure)}/json/version"
         else:
             frontend_url = frontend_url.lower()
         async with make_http_session(loop=loop) as session:
-            async with session.get(
-                ensure_cdp_url_endswith(frontend_url, "json/version")
-            ) as data:
+            async with session.get(ensure_cdp_url_endswith(frontend_url, "json/version")) as data:
                 return await data.json()
 
 
