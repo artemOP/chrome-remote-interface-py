@@ -21,6 +21,7 @@ setup(
     install_requires=[
         "aiofiles",
         "aiohttp[speed]",
+        "async-timeout",
         "jinja2",
         "pyee2",
         "stringcase",
