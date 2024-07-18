@@ -1,13 +1,14 @@
 import asyncio
 import re
 from asyncio import AbstractEventLoop
-from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union, overload
 from urllib.parse import urljoin, urlparse
 
 try:
     import ujson as json
 except ImportError:
     import json
+
 from aiohttp import AsyncResolver, ClientSession, TCPConnector
 
 from .client import Client, ClientDynamic
@@ -64,8 +65,28 @@ async def fetch_and_gen_proto_classes(url: str, loop: Optional[AbstractEventLoop
     return proto_def
 
 
+@overload
 async def connect(
-    url: Optional[str] = DEFAULT_URL,
+    url: str,
+    protocol: ProtocolDef,
+    remote: bool = ...,
+    flatten_sessions: bool = ...,
+    loop: Optional[AbstractEventLoop] = ...,
+) -> ClientDynamic: ...
+
+
+@overload
+async def connect(
+    url: str,
+    protocol: None = ...,
+    remote: bool = ...,
+    flatten_sessions: bool = ...,
+    loop: Optional[AbstractEventLoop] = ...,
+) -> Client: ...
+
+
+async def connect(
+    url: str = DEFAULT_URL,
     protocol: Optional[ProtocolDef] = None,
     remote: bool = False,
     flatten_sessions: bool = False,
